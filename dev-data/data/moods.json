@@ -3,42 +3,33 @@
     "name": "satisfied",
     "note": "I am very happy and feeling satisfied, because I got some great work completed!!!",
     "level": 80,
-    "createdAt": "2025-03-08 21:41:00",
-    "images": []
+    "images": ["test-mood-satisfied.jpg", "test-mood-2-satisfied.jpg"]
   },
   {
     "name": "neutral",
     "note": "Feeling Ok!",
     "level": 60,
-    "createdAt": "2025-03-07 08:00:00",
-    "images": []
+    "images": ["test-mood-neutral.jpg", "test-mood-2-neutral.jpg"]
   },
   {
     "name": "bad",
     "note": "Feeling bad!",
-    "level": 40,
-    "createdAt": "2025-03-07 10:00:00",
-    "images": []
+    "level": 40
   },
   {
     "name": "stressed",
     "note": "stressed due to work...",
-    "level": 30,
-    "createdAt": "2025-03-06 13:00:00",
-    "images": []
+    "level": 30
   },
   {
     "name": "stressed",
     "note": "stressed due to family relationship...",
     "level": 30,
-    "createdAt": "2025-03-05 17:00:00",
-    "images": []
+    "images": ["test-mood-stressed.jpg", "test-mood-2-stressed.jpg"]
   },
   {
     "name": "excited",
     "note": "Feeling excited! going to taking this new role!",
-    "level": 100,
-    "createdAt": "2025-03-04 09:00:00",
-    "images": []
+    "level": 100
   }
 ]
