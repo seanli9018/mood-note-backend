@@ -1,40 +1,17 @@
 const Mood = require('../models/moodModel');
+const APIFeatures = require('../utils/apiFeatures');
+const moodMapper = require('../utils/moodMapper');
 
 exports.getAllMoods = async (req, res) => {
   try {
-    // Filtering
-    const queryObj = { ...req.query };
-    const excludedQueries = ['page', 'sort', 'limit', 'fields'];
-    excludedQueries.forEach((excludedItem) => delete queryObj[excludedItem]);
-
-    // Advanced filtering: gte, gt, lte, lt
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-
-    let query = Mood.find(JSON.parse(queryStr));
-
-    // Sorting
-    if (req.query.sort) {
-      // 'level -createdAt'
-      const sortBy = req.query.sort.split(',').join(' ');
-      query = query.sort(sortBy);
-    } else {
-      // Default sorting by: createdAt descending.
-      query = query.sort('-createdAt');
-    }
-
-    // Fields limiting
-    if (req.query.fields) {
-      // 'name level note'
-      const fields = req.query.fields.split(',').join(' ');
-      query = query.select(fields);
-    } else {
-      // Default fields limiting to exclude __v field
-      query = query.select('-__v');
-    }
+    const features = new APIFeatures(Mood.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
 
     // Execute query
-    const moods = await query;
+    const moods = await features.query;
 
     res.status(200).json({
       status: 'success',
@@ -125,6 +102,50 @@ exports.deleteMood = async (req, res) => {
   } catch (err) {
     res.status(404).json({
       status: 'fail',
+      message: err,
+    });
+  }
+};
+
+// TODO: might want to add aggregation controller for calculating daily/weekly mood average
+exports.last7DaysMoods = async (_req, res) => {
+  try {
+    const last7DaysMoods = await Mood.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(new Date().setDate(new Date().getDate() - 7)), // Last 7 days
+          },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, // Group by day, Extract YYYY-MM-DD
+          moodLevelAvg: { $avg: '$level' }, // Compute average mood
+        },
+      },
+      { $addFields: { date: '$_id' } }, // add a meaning full field name to replace _id.
+      {
+        $project: {
+          _id: 0,
+        }, // to remove the _id field.
+      },
+      { $sort: { date: 1 } }, // Sort by date ascending
+    ]);
+
+    // Apply the mood mapper in JavaScript
+    const response = last7DaysMoods.map((date) => ({
+      ...date,
+      name: moodMapper(date.moodLevelAvg), // Add the mapped name
+    }));
+
+    res.status(200).json({
+      status: 'success',
+      data: { last7DaysMoods: response },
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
       message: err,
     });
   }

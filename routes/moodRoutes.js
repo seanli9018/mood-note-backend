@@ -3,6 +3,8 @@ const moodController = require('../controllers/moodController');
 
 const router = express.Router();
 
+router.route('/last-7-days').get(moodController.last7DaysMoods);
+
 router
   .route('/')
   .get(moodController.getAllMoods)

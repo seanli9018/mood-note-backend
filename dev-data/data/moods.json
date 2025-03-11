@@ -1,35 +1,12 @@
 [
   {
-    "name": "satisfied",
-    "note": "I am very happy and feeling satisfied, because I got some great work completed!!!",
-    "level": 80,
-    "images": ["test-mood-satisfied.jpg", "test-mood-2-satisfied.jpg"]
-  },
-  {
-    "name": "neutral",
-    "note": "Feeling Ok!",
-    "level": 60,
-    "images": ["test-mood-neutral.jpg", "test-mood-2-neutral.jpg"]
-  },
-  {
     "name": "bad",
-    "note": "Feeling bad!",
+    "note": "Feeling bad today due to making co-workers feeling bad!",
     "level": 40
   },
   {
     "name": "stressed",
     "note": "stressed due to work...",
     "level": 30
-  },
-  {
-    "name": "stressed",
-    "note": "stressed due to family relationship...",
-    "level": 30,
-    "images": ["test-mood-stressed.jpg", "test-mood-2-stressed.jpg"]
-  },
-  {
-    "name": "excited",
-    "note": "Feeling excited! going to taking this new role!",
-    "level": 100
   }
 ]
