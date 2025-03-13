@@ -1,12 +1,7 @@
 [
   {
-    "name": "bad",
-    "note": "Feeling bad today due to making co-workers feeling bad!",
-    "level": 40
-  },
-  {
-    "name": "stressed",
-    "note": "stressed due to work...",
-    "level": 30
+    "name": "satisfied",
+    "note": "Feeling good today. Making good progress",
+    "level": 80
   }
 ]

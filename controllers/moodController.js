@@ -1,6 +1,6 @@
 const Mood = require('../models/moodModel');
 const APIFeatures = require('../utils/apiFeatures');
-const moodMapper = require('../utils/moodMapper');
+const { moodLevelToName } = require('../utils/moodMapper');
 
 exports.getAllMoods = async (req, res) => {
   try {
@@ -136,7 +136,7 @@ exports.last7DaysMoods = async (_req, res) => {
     // Apply the mood mapper in JavaScript
     const response = last7DaysMoods.map((date) => ({
       ...date,
-      name: moodMapper(date.moodLevelAvg), // Add the mapped name
+      name: moodLevelToName(date.moodLevelAvg), // Add the mapped name
     }));
 
     res.status(200).json({

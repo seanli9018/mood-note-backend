@@ -1,4 +1,4 @@
-const moodMapper = (avgMoodLevel) => {
+exports.moodLevelToName = (avgMoodLevel) => {
   if (avgMoodLevel <= 20) return 'frustrated';
   if (avgMoodLevel > 20 && avgMoodLevel <= 30) return 'stressed';
   if (avgMoodLevel > 30 && avgMoodLevel <= 40) return 'bad';
@@ -11,4 +11,25 @@ const moodMapper = (avgMoodLevel) => {
   return 'unknown'; // Default case
 };
 
-module.exports = moodMapper;
+exports.moodNameToLevel = (moodName) => {
+  switch (moodName) {
+    case 'excited':
+      return 100;
+    case 'very-satisfied':
+      return 90;
+    case 'satisfied':
+      return 80;
+    case 'calm':
+      return 70;
+    case 'neutral':
+      return 60;
+    case 'dissatisfied':
+      return 50;
+    case 'bad':
+      return 40;
+    case 'stressed':
+      return 30;
+    case 'frustrated':
+      return 20;
+  }
+};
