@@ -1,152 +1,119 @@
 const Mood = require('../models/moodModel');
 const APIFeatures = require('../utils/apiFeatures');
 const { moodLevelToName } = require('../utils/moodMapper');
+const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
 
-exports.getAllMoods = async (req, res) => {
-  try {
-    const features = new APIFeatures(Mood.find(), req.query)
-      .filter()
-      .sort()
-      .limitFields()
-      .paginate();
+exports.getAllMoods = catchAsync(async (req, res) => {
+  const features = new APIFeatures(Mood.find(), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
 
-    // Execute query
-    const moods = await features.query;
+  // Execute query
+  const moods = await features.query;
 
-    res.status(200).json({
-      status: 'success',
-      results: moods.length,
-      data: { moods },
-    });
-  } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err,
-    });
-  }
-};
+  res.status(200).json({
+    status: 'success',
+    results: moods.length,
+    data: { moods },
+  });
+});
 
-exports.getMood = async (req, res) => {
+exports.getMood = catchAsync(async (req, res, next) => {
   const moodId = req.params.id;
-  try {
-    // findById is a wrapper function based on Tour.findOne({_id: moodId})
-    const mood = await Mood.findById(moodId);
+  // findById is a wrapper function based on Tour.findOne({_id: moodId})
+  const mood = await Mood.findById(moodId);
 
-    res.status(200).json({
-      status: 'success',
-      data: { mood },
-    });
-  } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err,
-    });
+  if (!mood) {
+    // if moodId is not returning data, throw 404 error to global error handler.
+    return next(new AppError('No mood found with the id provided', 404));
   }
-};
 
-exports.createMood = async (req, res) => {
-  try {
-    console.log(req);
-    // Getting data from body object of the post request.
-    const newMood = await Mood.create(req.body);
+  res.status(200).json({
+    status: 'success',
+    data: { mood },
+  });
+});
 
-    // Created
-    res.status(201).json({
-      status: 'success',
-      data: {
-        mood: newMood,
-      },
-    });
-  } catch (err) {
-    // Bad request
-    res.status(400).json({
-      status: 'fail',
-      message: err,
-    });
-  }
-};
+exports.createMood = catchAsync(async (req, res) => {
+  // Getting data from body object of the post request.
+  const newMood = await Mood.create(req.body);
 
-exports.updateMood = async (req, res) => {
+  // Created
+  res.status(201).json({
+    status: 'success',
+    data: {
+      mood: newMood,
+    },
+  });
+});
+
+exports.updateMood = catchAsync(async (req, res) => {
   const moodId = req.params.id;
-  try {
-    const updatedMood = await Mood.findByIdAndUpdate(moodId, req.body, {
-      new: true,
-      runValidators: true,
-    });
+  const updatedMood = await Mood.findByIdAndUpdate(moodId, req.body, {
+    new: true,
+    runValidators: true,
+  });
 
-    res.status(200).json({
-      status: 'success',
-      data: {
-        mood: updatedMood,
-      },
-    });
-  } catch (err) {
-    // Bad request
-    res.status(400).json({
-      status: 'fail',
-      message: err,
-    });
+  if (!updatedMood) {
+    // if moodId is not returning data, throw 404 error to global error handler.
+    return next(new AppError('No mood found with the id provided', 404));
   }
-};
 
-exports.deleteMood = async (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    data: {
+      mood: updatedMood,
+    },
+  });
+});
+
+exports.deleteMood = catchAsync(async (req, res) => {
   const moodId = req.params.id;
-  try {
-    await Mood.findByIdAndDelete(moodId);
-    res.status(204).json({
-      status: 'success',
-      data: {
-        mood: null,
-      },
-    });
-  } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err,
-    });
-  }
-};
+  await Mood.findByIdAndDelete(moodId);
+  res.status(204).json({
+    status: 'success',
+    data: {
+      mood: null,
+    },
+  });
+});
 
 // TODO: might want to add aggregation controller for calculating daily/weekly mood average
-exports.last7DaysMoods = async (_req, res) => {
-  try {
-    const last7DaysMoods = await Mood.aggregate([
-      {
-        $match: {
-          createdAt: {
-            $gte: new Date(new Date().setDate(new Date().getDate() - 7)), // Last 7 days
-          },
+exports.last7DaysMoods = catchAsync(async (_req, res) => {
+  const last7DaysMoods = await Mood.aggregate([
+    {
+      $match: {
+        createdAt: {
+          $gte: new Date(new Date().setDate(new Date().getDate() - 7)), // Last 7 days
         },
       },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, // Group by day, Extract YYYY-MM-DD
-          moodLevelAvg: { $avg: '$level' }, // Compute average mood
-        },
+    },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, // Group by day, Extract YYYY-MM-DD
+        moodLevelAvg: { $avg: '$level' }, // Compute average mood
       },
-      { $addFields: { date: '$_id' } }, // add a meaning full field name to replace _id.
-      {
-        $project: {
-          _id: 0,
-        }, // to remove the _id field.
-      },
-      { $sort: { date: 1 } }, // Sort by date ascending
-    ]);
+    },
+    { $addFields: { date: '$_id' } }, // add a meaning full field name to replace _id.
+    {
+      $project: {
+        _id: 0,
+      }, // to remove the _id field.
+    },
+    { $sort: { date: 1 } }, // Sort by date ascending
+  ]);
 
-    // Apply the mood mapper in JavaScript
-    const response = last7DaysMoods.map((date) => ({
-      ...date,
-      name: moodLevelToName(date.moodLevelAvg), // Add the mapped name
-    }));
+  // Apply the mood mapper in JavaScript
+  const response = last7DaysMoods.map((date) => ({
+    ...date,
+    name: moodLevelToName(date.moodLevelAvg), // Add the mapped name
+  }));
 
-    res.status(200).json({
-      status: 'success',
-      data: { last7DaysMoods: response },
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: 'error',
-      message: err,
-    });
-  }
-};
+  res.status(200).json({
+    status: 'success',
+    data: { last7DaysMoods: response },
+  });
+});
