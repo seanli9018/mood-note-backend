@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema({
       message: 'Password and confirmed password are not the same!',
     },
   },
+  passwordChangedAt: Date,
 });
 
 // Handles password encryption/hash before saving.
@@ -47,12 +48,23 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Instance method.
+// Instance method to check if its correct password again bcrypted db password.
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+// Instance method to check if the password has been changed after a certain timestamp.
+userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    // formatting db field passwordChangedAt from a date --> timestamp in milliseconds --> timestamp in seconds
+    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000);
+    return JWTTimestamp < changedTimestamp; // return true if the changedTimestamp is after JWTTimestamp.
+  }
+
+  return false;
 };
 
 const User = mongoose.model('User', userSchema);
