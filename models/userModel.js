@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validators = require('../utils/validators');
 const bcrypt = require('bcryptjs');
@@ -38,6 +39,8 @@ const userSchema = new mongoose.Schema({
     },
   },
   passwordChangedAt: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
 });
 
 // Handles password encryption/hash before saving.
@@ -50,6 +53,15 @@ userSchema.pre('save', async function (next) {
 
   // Remove passwordConfirm field after validation.
   this.passwordConfirm = undefined;
+  next();
+});
+
+// Handles password reset to auto update passwordChangedAt field
+userSchema.pre('save', function (next) {
+  if (!this.isModified('password') || this.isNew) return next();
+
+  // Small hack: here to avoid the jwt token generated before the passwordChangedAt.
+  this.passwordChangedAt = Date.now() - 2000;
   next();
 });
 
@@ -70,6 +82,25 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   }
 
   return false;
+};
+
+// Instance method to create password reset token.
+userSchema.methods.createPasswordResetToken = function () {
+  // Use build-in crypto util to create a hex 32 bytes token.
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // Store encrypted token in DB
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // expires in 10min.
+  this.passwordResetExpires =
+    Date.now() + process.env.PASSWORD_RESET_EXPIRES_IN * 60 * 1000;
+
+  // send un-encrypted token to client email. but store encrypted version in DB.
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);
