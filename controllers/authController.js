@@ -102,3 +102,16 @@ exports.protect = catchAsync(async (req, res, next) => {
   // ACCESS GRANTED.
   next();
 });
+
+exports.restrictTo = (...roles) => {
+  return (req, _res, next) => {
+    // roles: ['super-admin', 'admin']
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError('You do not have permission to perform this action', 403)
+      );
+    }
+
+    next();
+  };
+};

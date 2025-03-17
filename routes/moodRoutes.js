@@ -15,6 +15,10 @@ router
   .route('/:id')
   .get(moodController.getMood)
   .patch(moodController.updateMood)
-  .delete(moodController.deleteMood);
+  .delete(
+    authController.protect,
+    authController.restrictTo('super-admin', 'admin'),
+    moodController.deleteMood
+  );
 
 module.exports = router;
