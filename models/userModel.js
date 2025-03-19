@@ -41,6 +41,11 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  active: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
 });
 
 // Handles password encryption/hash before saving.
@@ -62,6 +67,15 @@ userSchema.pre('save', function (next) {
 
   // Small hack: here to avoid the jwt token generated before the passwordChangedAt.
   this.passwordChangedAt = Date.now() - 2000;
+  next();
+});
+
+// Query Middleware: handles user query who is active.
+// This pre-find query will also prevent user log in. While the user log in process, we are trying to find the User,
+// But with this implementation, no user will be found/returned.
+userSchema.pre(/^find/, function (next) {
+  // 'this' points to the current query. ONLY return the users has active set to true.
+  this.find({ active: { $ne: false } });
   next();
 });
 

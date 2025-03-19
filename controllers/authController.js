@@ -12,6 +12,31 @@ const signToken = (id) => {
   });
 };
 
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id);
+
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000 //90 days.
+    ),
+    httpOnly: true,
+  };
+  // turn on https cookie for PROD env.
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+
+  res.cookie('jwt', token, cookieOptions);
+
+  // Remove password field before sending data back to client.
+  user.password = undefined;
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user,
+    },
+  });
+};
+
 exports.signup = catchAsync(async (req, res, _next) => {
   // NOTE: DO NOT take the whole req.body object directly, only take what we need to create a user.
   // So that no one can pass role: admin within req.body.
@@ -22,19 +47,10 @@ exports.signup = catchAsync(async (req, res, _next) => {
     passwordConfirm: req.body.passwordConfirm,
   });
 
-  // sign jwt token
-  const token = signToken(newUser._id);
-
-  // log in the user by sending the token to client while sign up. (localStorage approach)
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: {
-      user: newUser,
-    },
-  });
+  createSendToken(newUser, 201, res);
 });
 
+// TODO: limit maximum number of login, after 5 failed attempts, need to lock the user.
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -55,14 +71,7 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   // 3. if everything ok, send token to client.
-  // sign jwt token
-  const token = signToken(user._id);
-
-  // No need to send back user data for logging in. Token is enough.
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  createSendToken(user, 200, res);
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -191,10 +200,29 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   // Update changedPasswordAt field in the userModel pre-save automatically.
 
   // 4. Log the user in, send JWT.
-  const token = signToken(user._id);
+  createSendToken(user, 200, res);
+});
 
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  // 1. Get user from collection
+  const user = await User.findById(req.user._id).select('+password');
+
+  // 2. Check if POSTed current password is correct
+  if (
+    !user ||
+    !(await user.correctPassword(req.body.currentPassword, user.password))
+  ) {
+    return next(new AppError('Your current password is wrong!', 401));
+  }
+
+  // 3. If so, update password
+  user.password = req.body.password;
+  // This password confirm will be used to compare to the password in the userModel validator.
+  // And it will be removed in the userModel pre-save hook once the validation is completed.
+  user.passwordConfirm = req.body.passwordConfirm;
+  // DO NOT use findOneAndUpdate, since password and confirmPassword comparison and pre-save hook will NOT work.
+  await user.save();
+
+  // 4. log user in, send JWT back to client
+  createSendToken(user, 200, res);
 });
