@@ -2,45 +2,74 @@ const mongoose = require('mongoose');
 const { moodNameToLevel } = require('../utils/moodMapper');
 
 // Define mongoose mood schema.
-const moodSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'A mood is required.'],
-    enum: {
-      values: [
-        'satisfied',
-        'very-satisfied',
-        'excited',
-        'neutral',
-        'calm',
-        'dissatisfied',
-        'bad',
-        'stressed',
-        'frustrated',
-      ],
-      message:
-        'Mood name should follow the pre-defined set: satisfied, neutral, stressed, etc.',
+const moodSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'A mood is required.'],
+      enum: {
+        values: [
+          'satisfied',
+          'very-satisfied',
+          'excited',
+          'neutral',
+          'calm',
+          'dissatisfied',
+          'bad',
+          'stressed',
+          'frustrated',
+        ],
+        message:
+          'Mood name should follow the pre-defined set: satisfied, neutral, stressed, etc.',
+      },
     },
-  },
-  note: {
-    type: String,
-    required: [true, 'Mood note is required.'],
-    trim: true,
-    maxlength: [1000, 'Mood note must have less or equal then 1000 characters'],
-    minlength: [10, 'Mood note must have more than or equal to 10 characters.'],
-  },
-  level: {
-    type: Number,
-    min: [0, 'Mood level must be above or equal to 0'],
-    max: [100, 'Mood level must be below or equal to 100'],
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now(),
-  },
-  images: [String],
-  // TODO: user field with userId need to be implemented here.
-});
+    note: {
+      type: String,
+      required: [true, 'Mood note is required.'],
+      trim: true,
+      maxlength: [
+        1000,
+        'Mood note must have less or equal then 1000 characters',
+      ],
+      minlength: [
+        10,
+        'Mood note must have more than or equal to 10 characters.',
+      ],
+    },
+    level: {
+      type: Number,
+      min: [0, 'Mood level must be above or equal to 0'],
+      max: [100, 'Mood level must be below or equal to 100'],
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now(),
+    },
+    images: [String],
+    location: {
+      //GeoJson
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point'],
+      },
+      coordinates: [Number], // [longitude, latitude]
+      address: String,
+      description: String,
+    },
+    // Parent referring to User
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+      required: [true, 'Mood must belong to a user.'],
+    },
+  }
+  // This is for populate virtual data that is not stored in the DB.
+  // {
+  //   toJSON: { virtuals: true },
+  //   toObject: { virtuals: true },
+  // }
+);
 
 // Mongoose Document Middleware: runs before .save() and .create()
 moodSchema.pre('save', function (next) {
