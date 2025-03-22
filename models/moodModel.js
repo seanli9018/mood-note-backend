@@ -79,6 +79,17 @@ moodSchema.pre('save', function (next) {
   next();
 });
 
+// Mongoose Query Middleware: to populate user data based on user id
+// But we don't need it. since its important to query user with mood info instead of query mood with user info.
+// to prevent repeat populating: when querying user, we want to populate mood, and with the mood again populating nested user.
+// moodSchema.pre(/^find/, function (next) {
+//   this.populate({
+//     path: 'user',
+//     select: 'name',
+//   });
+//   next();
+// });
+
 // Mongoose Query Middleware: to measure query performance.
 moodSchema.pre(/^find/, function (next) {
   // adding a variable to the query object.

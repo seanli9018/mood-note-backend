@@ -1,6 +1,7 @@
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const controllerFactory = require('./controllerFactory');
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -14,12 +15,11 @@ const filterObj = (obj, ...allowedFields) => {
   return newObj;
 };
 
-exports.getAllUsers = catchAsync(async (_req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'this route has not implemented yet.',
-  });
-});
+exports.getMe = (req, res, next) => {
+  req.params.id = req.user.id;
+
+  next();
+};
 
 exports.updateMe = catchAsync(async (req, res, next) => {
   // 1. Create error if user POSTs password data
@@ -58,30 +58,19 @@ exports.deleteMe = catchAsync(async (req, res, _next) => {
   });
 });
 
-exports.getUser = catchAsync(async (_req, res, _next) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'this route has not implemented yet.',
-  });
-});
+exports.getAllUsers = controllerFactory.getAll(User);
 
+exports.getUser = controllerFactory.getOne(User);
+
+// We will not implement create user NOT even for admin.
 exports.createUser = catchAsync(async (_req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'this route has not implemented yet.',
+  res.status(500).json({
+    status: 'error',
+    message: 'Please use sign up instead.',
   });
 });
 
-exports.updateUser = catchAsync(async (_req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'this route has not implemented yet.',
-  });
-});
+// DO NOT update password with this controller.
+exports.updateUser = controllerFactory.updateOne(User);
 
-exports.deleteUser = catchAsync(async (_req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'this route has not implemented yet.',
-  });
-});
+exports.deleteUser = controllerFactory.deleteOne(User);

@@ -1,85 +1,44 @@
 const Mood = require('../models/moodModel');
-const APIFeatures = require('../utils/apiFeatures');
 const { moodLevelToName } = require('../utils/moodMapper');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const controllerFactory = require('./controllerFactory');
 
-exports.getAllMoods = catchAsync(async (req, res) => {
-  const features = new APIFeatures(Mood.find(), req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate();
-
-  // Execute query
-  const moods = await features.query;
-
-  res.status(200).json({
-    status: 'success',
-    results: moods.length,
-    data: { moods },
-  });
-});
-
-exports.getMood = catchAsync(async (req, res, next) => {
-  const moodId = req.params.id;
-  // findById is a wrapper function based on Tour.findOne({_id: moodId})
-  const mood = await Mood.findById(moodId);
-
-  if (!mood) {
-    // if moodId is not returning data, throw 404 error to global error handler.
-    return next(new AppError('No mood found with the id provided', 404));
+// This middleware controller is for regular user: set userId in path (request params) to req.initialFilter, for admin: check the admin role.
+exports.setInitialFilter = (req, _res, next) => {
+  // if there is NO userId in the path (request params), and the user is not a admin, then return unauthorized error.
+  if (!req.params.userId && !req.user.role.includes('admin')) {
+    return next(
+      new AppError('You do not have permission to perform this action!', 403)
+    );
   }
 
-  res.status(200).json({
-    status: 'success',
-    data: { mood },
-  });
-});
+  // if there is a userId in the path (request params), then add a filter to only query all moods belong to the user.
+  let initialFilter = {};
+  if (req.params.userId) initialFilter = { user: req.params.userId };
 
-exports.createMood = catchAsync(async (req, res) => {
-  // Getting data from body object of the post request.
-  const newMood = await Mood.create(req.body);
+  req.initialFilter = initialFilter;
 
-  // Created
-  res.status(201).json({
-    status: 'success',
-    data: {
-      mood: newMood,
-    },
-  });
-});
+  next();
+};
 
-exports.updateMood = catchAsync(async (req, res) => {
-  const moodId = req.params.id;
-  const updatedMood = await Mood.findByIdAndUpdate(moodId, req.body, {
-    new: true,
-    runValidators: true,
-  });
+// This middleware controller is for nested route to obtain userId from path (request params), if no userId in req.body.
+exports.setUserId = (req, _res, next) => {
+  // if userId is not in the body, then get it from path (request params)
+  if (!req.body.user) req.body.user = req.params?.userId;
 
-  if (!updatedMood) {
-    // if moodId is not returning data, throw 404 error to global error handler.
-    return next(new AppError('No mood found with the id provided', 404));
-  }
+  next();
+};
 
-  res.status(200).json({
-    status: 'success',
-    data: {
-      mood: updatedMood,
-    },
-  });
-});
+exports.getAllMoods = controllerFactory.getAll(Mood);
 
-exports.deleteMood = catchAsync(async (req, res) => {
-  const moodId = req.params.id;
-  await Mood.findByIdAndDelete(moodId);
-  res.status(204).json({
-    status: 'success',
-    data: {
-      mood: null,
-    },
-  });
-});
+exports.getMood = controllerFactory.getOne(Mood);
+
+exports.createMood = controllerFactory.createOne(Mood);
+
+exports.updateMood = controllerFactory.updateOne(Mood);
+
+exports.deleteMood = controllerFactory.deleteOne(Mood);
 
 // TODO: might want to add aggregation controller for calculating daily/weekly mood average
 exports.last7DaysMoods = catchAsync(async (_req, res) => {
