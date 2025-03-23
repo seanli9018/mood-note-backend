@@ -11,17 +11,27 @@ const router = express.Router({ mergeParams: true });
 // =====================Below this point, all routes are protected, need user authentication.=====================
 router.use(authController.protect);
 
-router.route('/last-7-days').get(moodController.last7DaysMoods);
+router.route('/last-7-days').get(moodController.myLast7DaysMoods);
+router
+  .route('/getMyMoods')
+  .get(moodController.getMyMoods, moodController.getAllMoods);
+router
+  .route('/createMyMood')
+  .post(
+    authController.restrictTo('user', 'member'),
+    moodController.createMyMood,
+    moodController.createMood
+  );
 
 router
   .route('/')
   .get(
-    moodController.setInitialFilter, // for regular user, set userId in path (request params) to req.initialFilter, for admin, check the admin role.
+    moodController.setInitialFilter, // for any user/admin, set userId from path (request params) to req.initialFilter, if no userId in the path but its an admin, send all moods.
     moodController.getAllMoods
   )
   .post(
     authController.restrictTo('user', 'member'), // Only users are able to create mood.
-    moodController.setUserId,
+    moodController.setUserId, // for nested user/mood, get userId from path (request params) and set to req.body.
     moodController.createMood
   );
 

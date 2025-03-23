@@ -117,13 +117,14 @@ userSchema.methods.createPasswordResetToken = function () {
   return resetToken;
 };
 
-// Virtual populate: to populate the mood data thats related to the user, how ever don't store any mood data in user model.
+// Virtual populate: to populate the mood data thats related to the user, however don't store any mood data in user model.
 // this is just a setup, we still have to specify on which user controller to populate the mood data.
-userSchema.virtual('moods', {
-  ref: 'Mood',
-  foreignField: 'user', // the name of the field in moodModel to refer to userModel.
-  localField: '_id', // localField is used to query the matching data that's saved in the foreignField.
-});
+// No need to include mood data when querying user data for now.
+// userSchema.virtual('moods', {
+//   ref: 'Mood',
+//   foreignField: 'user', // the name of the field in moodModel to refer to userModel.
+//   localField: '_id', // localField is used to query the matching data that's saved in the foreignField.
+// });
 
 const User = mongoose.model('User', userSchema);
 

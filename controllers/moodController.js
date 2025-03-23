@@ -23,9 +23,24 @@ exports.setInitialFilter = (req, _res, next) => {
 };
 
 // This middleware controller is for nested route to obtain userId from path (request params), if no userId in req.body.
+// For creating mood.
 exports.setUserId = (req, _res, next) => {
   // if userId is not in the body, then get it from path (request params)
   if (!req.body.user) req.body.user = req.params?.userId;
+
+  next();
+};
+
+exports.getMyMoods = (req, _res, next) => {
+  // get userId from req.user._id.
+  req.initialFilter = { user: req.user._id };
+
+  next();
+};
+
+exports.createMyMood = (req, _res, next) => {
+  // get userId from req.user._id.
+  req.body.user = req.user._id;
 
   next();
 };
@@ -41,8 +56,13 @@ exports.updateMood = controllerFactory.updateOne(Mood);
 exports.deleteMood = controllerFactory.deleteOne(Mood);
 
 // TODO: might want to add aggregation controller for calculating daily/weekly mood average
-exports.last7DaysMoods = catchAsync(async (_req, res) => {
-  const last7DaysMoods = await Mood.aggregate([
+exports.myLast7DaysMoods = catchAsync(async (req, res) => {
+  const myLast7DaysMoods = await Mood.aggregate([
+    {
+      $match: {
+        user: req.user._id,
+      },
+    },
     {
       $match: {
         createdAt: {
@@ -66,13 +86,13 @@ exports.last7DaysMoods = catchAsync(async (_req, res) => {
   ]);
 
   // Apply the mood mapper in JavaScript
-  const response = last7DaysMoods.map((date) => ({
+  const response = myLast7DaysMoods.map((date) => ({
     ...date,
     name: moodLevelToName(date.moodLevelAvg), // Add the mapped name
   }));
 
   res.status(200).json({
     status: 'success',
-    data: { last7DaysMoods: response },
+    data: { myLast7DaysMoods: response },
   });
 });
