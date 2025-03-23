@@ -71,6 +71,9 @@ const moodSchema = new mongoose.Schema(
   // }
 );
 
+// Performance optimization: compound index for high read/write ratio documents often queried fields.
+moodSchema.index({ user: 1, createdAt: -1 });
+
 // Mongoose Document Middleware: runs before .save() and .create()
 moodSchema.pre('save', function (next) {
   if (this.level) return;
