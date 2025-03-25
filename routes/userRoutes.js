@@ -27,7 +27,12 @@ router.get(
   userController.getMe, // Passing logged in user's userId from req.user to path (request parameters).
   userController.getUser
 );
-router.patch('/updateMe', userController.updateMe);
+router.patch(
+  '/updateMe',
+  userController.uploadUserPhoto,
+  userController.resizeUserPhoto,
+  userController.updateMe
+);
 router.delete('/deleteMe', userController.deleteMe);
 
 // =====================Below this point, all routes are Admin Only.=====================
