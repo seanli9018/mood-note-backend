@@ -76,9 +76,22 @@ moodSchema.index({ user: 1, createdAt: -1 });
 
 // Mongoose Document Middleware: runs before .save() and .create()
 moodSchema.pre('save', function (next) {
-  if (this.level) return;
+  // TODO: to validate if the level is ranged within the provided mood name.
+  if (this.level) return next();
   // if no level field provided, assigning default level based on the mood name field.
   this.level = moodNameToLevel(this.name);
+  next();
+});
+
+// Mongoose Document Middleware: runs before .updateOne(), .findOneAndUpdate(), findByIdAndUpdate()
+moodSchema.pre(['updateOne', 'findOneAndUpdate'], function (next) {
+  // To get the update payload.
+  const update = this.getUpdate();
+  // TODO: to validate if the level is provided then is it ranged within the provided mood name?
+
+  if (update.name && !update.level) {
+    update.level = moodNameToLevel(update.name);
+  }
   next();
 });
 

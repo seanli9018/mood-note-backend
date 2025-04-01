@@ -3,6 +3,49 @@ const { moodLevelToName } = require('../utils/moodMapper');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const controllerFactory = require('./controllerFactory');
+const multer = require('multer');
+const sharp = require('sharp');
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (_req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Not a image! Please upload only images.', 400), false);
+  }
+};
+
+const upload = multer({
+  storage: multerStorage, // save image in memory buffer. (No save to disk)
+  filter: multerFilter, // check if it is the correct file type.
+});
+
+exports.uploadMoodImages = upload.array('images', 3);
+
+exports.resizeMoodImages = catchAsync(async (req, _res, next) => {
+  if (!req.files) return next();
+
+  req.body.images = [];
+
+  await Promise.all(
+    req.files.map(async (file, index) => {
+      const filename = `mood-${req.params.id ?? req.user._id}-${Date.now()}-${
+        index + 1
+      }.jpeg`;
+      // use sharp to cut image and covert to jpeg
+      await sharp(file.buffer)
+        .resize(2000, 1333) // 3:2 image.
+        .toFormat('jpeg')
+        .jpeg({ quality: 80 })
+        .toFile(`public/img/moods/${filename}`);
+
+      req.body.images.push(filename);
+    })
+  );
+
+  next();
+});
 
 // This middleware controller is for regular user: set userId in path (request params) to req.initialFilter, for admin: check the admin role.
 exports.setInitialFilter = (req, _res, next) => {

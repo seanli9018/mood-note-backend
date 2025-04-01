@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const createDOMPurify = require('dompurify');
 const { JSDOM } = require('jsdom');
+const compression = require('compression');
 
 const app = express();
 
@@ -53,6 +54,9 @@ const sanitizeReqBody = (req, _res, next) => {
   next();
 };
 app.use(sanitizeReqBody);
+
+// Middleware to compress all API responses.
+app.use(compression());
 
 // Routes
 app.use('/api/v1/moods', moodRouter);

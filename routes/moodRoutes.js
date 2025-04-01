@@ -19,6 +19,8 @@ router
   .route('/createMyMood')
   .post(
     authController.restrictTo('user', 'member'),
+    moodController.uploadMoodImages,
+    moodController.resizeMoodImages,
     moodController.createMyMood,
     moodController.createMood
   );
@@ -31,6 +33,8 @@ router
   )
   .post(
     authController.restrictTo('user', 'member'), // Only users are able to create mood.
+    moodController.uploadMoodImages,
+    moodController.resizeMoodImages,
     moodController.setUserId, // for nested user/mood, get userId from path (request params) and set to req.body.
     moodController.createMood
   );
@@ -38,7 +42,11 @@ router
 router
   .route('/:id')
   .get(moodController.getMood)
-  .patch(moodController.updateMood)
+  .patch(
+    moodController.uploadMoodImages,
+    moodController.resizeMoodImages,
+    moodController.updateMood
+  )
   .delete(moodController.deleteMood);
 
 module.exports = router;
