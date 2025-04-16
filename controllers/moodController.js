@@ -100,22 +100,41 @@ exports.deleteMood = controllerFactory.deleteOne(Mood);
 
 // TODO: might want to add aggregation controller for calculating daily/weekly mood average
 exports.myLast7DaysMoods = catchAsync(async (req, res) => {
+  // get the timezone from request (e.g., req.query.timezone)
+  const timezone = req.query.timezone || 'UTC'; // Fallback to UTC if not provided
+
+  const getUTCStartOfUser7DaysAgo = (timezone) => {
+    const now = new Date();
+    const localNow = new Date(
+      now.toLocaleString('en-US', { timeZone: timezone })
+    );
+    localNow.setDate(localNow.getDate() - 6); // last 7 days includes today
+    return new Date(localNow.toISOString().split('T')[0]); // UTC midnight
+  };
+
+  const startDate = getUTCStartOfUser7DaysAgo(timezone);
+
   const myLast7DaysMoods = await Mood.aggregate([
     {
       $match: {
         user: req.user._id,
+        createdAt: { $gte: startDate },
       },
     },
     {
-      $match: {
-        createdAt: {
-          $gte: new Date(new Date().setDate(new Date().getDate() - 7)), // Last 7 days
+      $addFields: {
+        localDate: {
+          $dateToString: {
+            format: '%Y-%m-%d',
+            date: '$createdAt',
+            timezone: timezone, // convert UTC to user local time.
+          },
         },
       },
     },
     {
       $group: {
-        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, // Group by day, Extract YYYY-MM-DD
+        _id: '$localDate',
         moodLevelAvg: { $avg: '$level' }, // Compute average mood
       },
     },
